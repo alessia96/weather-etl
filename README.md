@@ -21,19 +21,20 @@ In order to run the project you need to:
 ###
 ### Build and run locally
 In order to build and run the docker you should run:
-
+```bash
     docker compose build
     docker compose up
+```
 
 Once your docker components are running:
-1. open your browser and navigate to http://0.0.0.0:8080/;
-2. Enter the credentials specified in the .env file. If you did not change them,
-the username and password are both `airflow`;
-3. Start the `init_pipeline` DAG (it will run only once);
-4. Start the `weather_pipeline` to collect weather data (it will run hourly by default)
+1. open your browser and navigate to [http://0.0.0.0:8080](http://0.0.0.0:8080/);
+2. Enter the credentials specified in the `.env` file. If you haven't changed them, the default username and 
+password are both `airflow`;
+3. Start the `init_dag` DAG (it will run only once);
+4. Start the `weather_pipeline` to collect weather data (it runs hourly by default)
 
 
-The `weather_pipeline` first collects raw weather data, and then transform it 
+The `weather_pipeline` first collects raw weather data, then transforms it 
 into a baseline (or cleaned) data.
 
 
