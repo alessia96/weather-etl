@@ -43,8 +43,9 @@ def init_weather():
 
 
 def init_pipeline() -> DAG:
+    """ Create DB tables and populate cities table """
     dag = DAG(
-        dag_id='init_dag',
+        dag_id='init_pipeline',
         schedule='@once',
         default_args=default_args
     )
@@ -53,12 +54,8 @@ def init_pipeline() -> DAG:
     return dag
 
 
-@task
-def get_cities_task(cities_list: list) -> list:
-    cities_data = load_cities(cities_list=cities_list)
-    return cities_data
-
 def weather_pipeline() -> DAG:
+    """ Ingest, transform, and store weather data """
     dag = DAG(
         dag_id='weather_pipeline',
         schedule=os.getenv("WEATHER_PIPELINE_CRON", '0 * * * *'),

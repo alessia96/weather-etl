@@ -1,6 +1,5 @@
 # weather-etl
 
-## Weather Data 
 
 The following project allows to ingest and transform weather data from 
 openweathermap API.
