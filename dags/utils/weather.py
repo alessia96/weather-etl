@@ -66,3 +66,74 @@ class WeatherDataIngestor:
         conn.commit()
         conn.close()
 
+
+
+class WeatherProcessor:
+    """
+    Class for transforming raw weather data
+    """
+    def __init__(self):
+        self.raw_data = None
+        self.logger = logging.getLogger(__name__)
+
+    def load_raw_data(self):
+        conn = psycopg2.connect(conn_str)
+        cursor = conn.cursor()
+        select_query = f"""
+                SELECT {RAW_WEATHER_TABLE}.city_id, raw_data
+                FROM {RAW_WEATHER_TABLE}
+                INNER JOIN (
+                    SELECT city_id, MAX(timestamp) AS max_timestamp
+                    FROM {RAW_WEATHER_TABLE}
+                    GROUP BY city_id
+                ) AS latest
+                ON {RAW_WEATHER_TABLE}.city_id = latest.city_id AND {RAW_WEATHER_TABLE}.timestamp = latest.max_timestamp;
+                """
+        try:
+            cursor.execute(select_query)
+            rows = cursor.fetchall()
+        except (Exception, ) as e:
+            self.logger.error(f"Failed to retrieve last raw data. Reason: {e}")
+            rows = []
+
+
+        raw_data = [{'city_id': row[0], **json.loads(row[1])} for row in rows]
+        conn.close()
+        return raw_data
+
+
+    @staticmethod
+    def clean_weather_data(weather_data: dict) -> dict:
+        timestamp = weather_data['dt']
+        date_time = datetime.datetime.fromtimestamp(timestamp).strftime('%Y-%m-%d %H:%M')
+        temp = weather_data['main']['temp']
+        weather_main = weather_data['weather'][0]['main']
+        weather_desc = weather_data['weather'][0]['description']
+        wind_speed = weather_data['wind']['speed']  # m/s
+        wind_degree = weather_data['wind']['deg']
+        cloudiness = weather_data['clouds']['all']
+        rain = weather_data.get('rain', {}).get('1h')  # mm/h
+        snow = weather_data.get('snow', {}).get('1h')  # mm/h
+
+        return {
+            'timestamp': timestamp,
+            'datetime': date_time,
+            'temperature': temp,
+            'weather_main': weather_main,
+            'weather_description': weather_desc,
+            'wind_speed': wind_speed,
+            'wind_degree': wind_degree,
+            'cloudiness': cloudiness,
+            'rain': rain,
+            'snow': snow
+        }
+
+    def execute(self):
+        if self.raw_data is None:
+            self.raw_data = self.load_raw_data()
+
+        for raw_weather in self.raw_data:
+            city_id = raw_weather['city_id']
+            transformed_data = self.clean_weather_data(weather_data=raw_weather)
+            store_baseline_weather_data(city_id=city_id, cleaned_data=transformed_data)
+
